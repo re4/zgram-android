@@ -1646,7 +1646,7 @@ public class Theme {
             if (isDark != UNKNOWN) {
                 return isDark == DARK;
             }
-            if ("Dark Blue".equals(name) || "Night".equals(name)) {
+            if ("Dark Blue".equals(name) || "Night".equals(name) || "Zgram".equals(name)) {
                 isDark = DARK;
             } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name)) {
                 isDark = LIGHT;
@@ -4009,6 +4009,16 @@ public class Theme {
         sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Night", themeInfo);
+
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "Zgram";
+        themeInfo.assetName = "zgram.attheme";
+        themeInfo.previewBackgroundColor = 0xff090a0d;
+        themeInfo.previewInColor = 0xff13161b;
+        themeInfo.previewOutColor = 0xff2a1e33;
+        themeInfo.sortIndex = 0;
+        themes.add(currentDayTheme = currentNightTheme = defaultTheme = themeInfo);
+        themesDict.put("Zgram", themeInfo);
 
         String themesString = themeConfig.getString("themes2", null);
 

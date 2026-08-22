@@ -187,6 +187,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.messenger.zgram.ZgramLocalData;
 import org.telegram.messenger.camera.CameraView;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.utils.FBool;
@@ -1248,6 +1249,7 @@ public class ChatActivity extends BaseFragment implements
 
     public final static int OPTION_VIEW_STATISTICS = 115;
     public final static int OPTION_WELCOME_REVERT = 116;
+    public final static int OPTION_ZGRAM_BOOKMARK = 117;
 
     private final static int[] allowedNotificationsDuringChatListAnimations = new int[]{
             NotificationCenter.messagesRead,
@@ -1644,6 +1646,7 @@ public class ChatActivity extends BaseFragment implements
     private final static int change_colors = 27;
     private final static int tag_message = 28;
     private final static int boost_group = 29;
+    private final static int zgram_chat_tools = 75;
 
     private final static int bot_help = 30;
     private final static int bot_settings = 31;
@@ -4028,6 +4031,8 @@ public class ChatActivity extends BaseFragment implements
                     }
                 } else if (id == change_colors) {
                     showChatThemeBottomSheet();
+                } else if (id == zgram_chat_tools) {
+                    showZgramChatTools();
                 } else if (id == topic_close) {
                     if (forumTopic == null)
                         return;
@@ -4417,6 +4422,9 @@ public class ChatActivity extends BaseFragment implements
 
             if (searchItem != null) {
                 headerItem.lazilyAddSubItem(search, R.drawable.msg_search, LocaleController.getString(R.string.Search));
+            }
+            if (currentEncryptedChat == null && chatMode == MODE_DEFAULT && dialog_id != 0) {
+                headerItem.lazilyAddSubItem(zgram_chat_tools, R.drawable.zgram_wings, LocaleController.getString(R.string.ZgramChatTools));
             }
             if (ChatObject.isBoostSupported(currentChat) && (getUserConfig().isPremium() || ChatObject.isBoosted(chatInfo) || ChatObject.hasAdminRights(currentChat))) {
                 RLottieDrawable drawable = new RLottieDrawable(R.raw.boosts, "" + R.raw.boosts, dp(24), dp(24));
@@ -21963,6 +21971,7 @@ public class ChatActivity extends BaseFragment implements
                     FileLog.d("ChatActivity didReceiveNewMessages return: opened scheduled messages");
                     return;
                 }
+                ZgramLocalData.get(currentAccount).capture(arr);
                 processNewMessages(arr);
             } else if (ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatInfo != null && did == -chatInfo.linked_chat_id) {
                 for (int a = 0, N = arr.size(); a < N; a++) {
@@ -22253,6 +22262,7 @@ public class ChatActivity extends BaseFragment implements
             }
             ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>) args[0];
             long channelId = (Long) args[1];
+            ZgramLocalData.get(currentAccount).markDeleted(dialog_id, markAsDeletedMessages);
             boolean update = args.length > 2 && (boolean) args[2];
             boolean sent = args.length > 3 && (boolean) args[3];
             int scheduledMessageId = args.length > 5 ? (int) args[5] : 0;
@@ -23335,6 +23345,7 @@ public class ChatActivity extends BaseFragment implements
             if (did != dialog_id && did != mergeDialogId) {
                 return;
             }
+            ZgramLocalData.get(currentAccount).capture(messageObjects);
             int loadIndex = did == dialog_id ? 0 : 1;
             doOnIdle(() -> {
                 replaceMessageObjects(messageObjects, loadIndex, false);
@@ -34234,6 +34245,17 @@ public class ChatActivity extends BaseFragment implements
                 FactCheckController.getInstance(currentAccount).openFactCheckEditor(getContext(), getResourceProvider(), msg, false);
                 break;
             }
+            case OPTION_ZGRAM_BOOKMARK: {
+                final boolean added = ZgramLocalData.get(currentAccount).toggleBookmark(selectedObject);
+                BulletinFactory.of(this)
+                        .createSimpleBulletin(
+                                R.raw.contact_check,
+                                getString(added
+                                        ? R.string.ZgramLocalBookmarksAdded
+                                        : R.string.ZgramLocalBookmarksRemoved))
+                        .show();
+                break;
+            }
             case OPTION_WELCOME_REVERT:
                 getMessagesController().revertWelcomeEphemeralMessage(selectedObject);
                 break;
@@ -34800,6 +34822,7 @@ public class ChatActivity extends BaseFragment implements
             if (view instanceof ChatMessageCell) {
                 ChatMessageCell cell = (ChatMessageCell) view;
                 MessageObject messageObject = cell.getMessageObject();
+                ZgramLocalData.get(currentAccount).capture(messageObject);
 
                 boolean disableSelection = false;
                 boolean selected = false;
@@ -43271,6 +43294,138 @@ public class ChatActivity extends BaseFragment implements
         });
     }
 
+    private void showZgramChatTools() {
+        new AlertDialog.Builder(getContext(), getResourceProvider())
+                .setTitle(getString(R.string.ZgramChatTools))
+                .setItems(new CharSequence[] {
+                        getString(R.string.ZgramChatCommands),
+                        getString(R.string.ZgramChatAppearance),
+                        getString(R.string.ZgramChatMedia),
+                        getString(R.string.MuteNotifications),
+                        getString(R.string.ZgramChatArchive),
+                        getString(R.string.ZgramChatBookmarks)
+                }, (dialog, which) -> {
+                    if (which == 0) {
+                        presentFragment(new ZgramCommandPaletteActivity(dialog_id, this));
+                    } else if (which == 1) {
+                        openZgramChatAppearance();
+                    } else if (which == 2) {
+                        showZgramMediaFilters();
+                    } else if (which == 3) {
+                        openZgramMute();
+                    } else if (which == 4) {
+                        showZgramArchiveControls();
+                    } else if (which == 5) {
+                        presentFragment(new ZgramBookmarksActivity());
+                    }
+                })
+                .show();
+    }
+
+    private void showZgramMediaFilters() {
+        final int[] tabs = {
+                SharedMediaLayout.TAB_PHOTOVIDEO,
+                SharedMediaLayout.TAB_FILES,
+                SharedMediaLayout.TAB_LINKS,
+                SharedMediaLayout.TAB_VOICE,
+                SharedMediaLayout.TAB_AUDIO
+        };
+        new AlertDialog.Builder(getContext(), getResourceProvider())
+                .setTitle(getString(R.string.ZgramChatMedia))
+                .setItems(new CharSequence[] {
+                        getString(R.string.SharedMediaTab2),
+                        getString(R.string.SharedFilesTab2),
+                        getString(R.string.SharedLinksTab2),
+                        getString(R.string.SharedVoiceTab2),
+                        getString(R.string.SharedMusicTab2)
+                }, (dialog, which) -> openZgramMedia(tabs[which]))
+                .show();
+    }
+
+    private void showZgramArchiveControls() {
+        final ZgramLocalData data = ZgramLocalData.get(currentAccount);
+        final int retention = data.getRetention(dialog_id);
+        new AlertDialog.Builder(getContext(), getResourceProvider())
+                .setTitle(getString(R.string.ZgramChatArchive))
+                .setMessage(LocaleController.formatString(
+                        R.string.ZgramLocalArchiveStatus,
+                        zgramRetentionName(retention)))
+                .setItems(new CharSequence[] {
+                        getString(R.string.ZgramLocalArchiveSetRetention),
+                        getString(R.string.ZgramLocalArchiveView)
+                }, (dialog, which) -> {
+                    if (which == 0) {
+                        chooseZgramArchiveRetention();
+                    } else {
+                        presentFragment(new ZgramArchiveActivity(dialog_id));
+                    }
+                })
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .show();
+    }
+
+    private void chooseZgramArchiveRetention() {
+        final int[] values = {
+                ZgramLocalData.RETENTION_OFF,
+                ZgramLocalData.RETENTION_WEEK,
+                ZgramLocalData.RETENTION_MONTH,
+                ZgramLocalData.RETENTION_YEAR,
+                ZgramLocalData.RETENTION_FOREVER
+        };
+        final CharSequence[] labels = new CharSequence[values.length];
+        for (int i = 0; i < values.length; i++) {
+            labels[i] = zgramRetentionName(values[i]);
+        }
+        new AlertDialog.Builder(getContext(), getResourceProvider())
+                .setTitle(getString(R.string.ZgramLocalArchiveRetention))
+                .setItems(labels, (dialog, which) -> {
+                    final ZgramLocalData data = ZgramLocalData.get(currentAccount);
+                    data.setRetention(dialog_id, values[which]);
+                    if (values[which] != ZgramLocalData.RETENTION_OFF) {
+                        data.capture(messages);
+                    }
+                    BulletinFactory.of(this)
+                            .createSimpleBulletin(
+                                    R.raw.contact_check,
+                                    getString(R.string.ZgramLocalArchiveRetentionChanged))
+                            .show();
+                })
+                .show();
+    }
+
+    private static String zgramRetentionName(int value) {
+        if (value == ZgramLocalData.RETENTION_WEEK) {
+            return LocaleController.getString(R.string.ZgramLocalArchiveRetentionWeek);
+        } else if (value == ZgramLocalData.RETENTION_MONTH) {
+            return LocaleController.getString(R.string.ZgramLocalArchiveRetentionMonth);
+        } else if (value == ZgramLocalData.RETENTION_YEAR) {
+            return LocaleController.getString(R.string.ZgramLocalArchiveRetentionYear);
+        } else if (value == ZgramLocalData.RETENTION_FOREVER) {
+            return LocaleController.getString(R.string.ZgramLocalArchiveRetentionForever);
+        }
+        return LocaleController.getString(R.string.ZgramLocalArchiveRetentionOff);
+    }
+
+    public void openZgramChatAppearance() {
+        showChatThemeBottomSheet();
+    }
+
+    public void openZgramMedia(int tab) {
+        final Bundle args = new Bundle();
+        args.putLong("dialog_id", dialog_id);
+        args.putLong("topic_id", getTopicId());
+        args.putInt("start_from", tab);
+        final MediaActivity activity = new MediaActivity(
+                args,
+                avatarContainer == null ? null : avatarContainer.getSharedMediaPreloader());
+        activity.setChatInfo(chatInfo);
+        presentFragment(activity);
+    }
+
+    public void openZgramMute() {
+        toggleMute(false);
+    }
+
     private void setChildrenEnabled(View view, boolean isEnabled) {
         if (view instanceof ViewGroup) {
             ViewGroup viewGroup = (ViewGroup) view;
@@ -46266,6 +46421,15 @@ public class ChatActivity extends BaseFragment implements
             items.add(getString(R.string.WelcomeMessageRevert));
             options.add(OPTION_WELCOME_REVERT);
             icons.add(R.drawable.outline_revert_24);
+        }
+        if (ZgramLocalData.canStore(primaryMessage)) {
+            final boolean bookmarked = ZgramLocalData.get(currentAccount)
+                    .isBookmarked(primaryMessage.getDialogId(), primaryMessage.getId());
+            items.add(getString(bookmarked
+                    ? R.string.ZgramLocalBookmarksRemove
+                    : R.string.ZgramLocalBookmarksAdd));
+            options.add(OPTION_ZGRAM_BOOKMARK);
+            icons.add(bookmarked ? R.drawable.msg_unfave : R.drawable.msg_fave);
         }
     }
 

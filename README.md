@@ -1,46 +1,86 @@
-## Telegram messenger for Android
+<p align="center">
+  <img src="TMessagesProj/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="Zgram angel-wing icon" width="160">
+</p>
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+<h1 align="center">Zgram for Android</h1>
 
-## Creating your Telegram Application
+<p align="center"><strong>Messaging, elevated.</strong></p>
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+<p align="center">
+  <a href="https://t.me/zgram_io"><strong>Downloads and official updates</strong></a>
+  ·
+  <a href="https://github.com/re4/zgram-android">Source</a>
+</p>
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+Zgram for Android is an independent community modification of Telegram for
+Android. It keeps the Telegram protocol and mobile experience while bringing
+the Zgram identity and celestial obsidian-and-gold design to Android.
 
-### API, Protocol documentation
+## Android port
 
-Telegram API manuals: https://core.telegram.org/api
+- Custom Zyzz angel-wing launcher, adaptive, monochrome, account, and notification icons
+- ZGRAM wordmark in onboarding, the chat list, and stories
+- Built-in Zgram dark theme with gold accents and the celestial wing wallpaper
+- Zgram is the first-run theme while existing saved theme choices are preserved
+- Official updates shortcut in Settings linking to [@zgram_io](https://t.me/zgram_io)
+- Power User Center with live bookmark, archive, and encrypted-storage totals
+- Searchable command palette for navigation, interface settings, local data, and current-chat actions
+- Local Bookmarks that keep searchable message snapshots after edits or source deletion
+- Encrypted Local Archive with per-chat opt-in retention, edit history, deletion markers, filters, and JSON/HTML export
+- Expanded Zgram Chat Tools for chat appearance, mute controls, media filters, archive controls, bookmarks, and commands
+- Automated GitHub Debug APK builds with downloadable artifacts
+- All standard Telegram Android chat, group, channel, call, media, and privacy features
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+## Private local data
 
-### Compilation Guide
+Local Bookmarks and the Encrypted Local Archive are Android-native Zgram
+features. Their per-account data file is encrypted with an Android Keystore
+key, stays on the device, and is never synced by Zgram. Archive capture is
+opt-in per chat with 7-day, 30-day, 1-year, or forever retention.
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
+Only eligible messages observed by this device while archiving is enabled are
+captured. Secret chats, self-destructing and view-once media, protected or paid
+content, and service messages are excluded. Exports are decrypted only when
+you explicitly create and share a JSON or HTML file.
 
-You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android SDK 35.
+## Build a Debug APK
 
-1. Clone the Telegram source code with its submodules:
+You need Android Studio 2025.1.4, Android SDK 35, Android NDK
+27.2.12479018, and Java 17.
+
+1. Clone with submodules:
+
    ```bash
-   git clone --recursive --shallow-submodules https://github.com/DrKLO/Telegram.git Telegram
+   git clone --recursive https://github.com/re4/zgram-android.git
+   cd zgram-android
    ```
-   In case you forgot the `--recursive` flag, change to the `Telegram` directory and run:
+
+2. Configure your Telegram API credentials in
+   `TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java`.
+
+3. Build the development APK:
+
    ```bash
-   git submodule init && git submodule update --init --recursive --depth=1
+   ./gradlew :TMessagesProj_App:assembleAfatDebug
    ```
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
 
-### Localization
+The APK is generated under `TMessagesProj_App/build/outputs/apk/afat/debug/`.
 
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+Before publishing, replace the bundled sample signing and service configuration
+with your own keystore, Firebase configuration, package identity, API ID, and
+API hash.
+
+## Automatic builds
+
+Every source push and pull request runs the Android Debug workflow. You can
+also start it manually from GitHub Actions. Successful runs upload a
+`Zgram Android Debug` APK artifact.
+
+## Telegram platform documentation
+
+- [Telegram API](https://core.telegram.org/api)
+- [MTProto](https://core.telegram.org/mtproto)
+- [Security guidelines](https://core.telegram.org/mtproto/security_guidelines)
+
+Zgram is unofficial and is not affiliated with Telegram Messenger Inc. The
+source remains subject to the licenses included in this repository.
