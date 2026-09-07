@@ -4918,6 +4918,13 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         return (baseFragment instanceof ChatActivity) && ((ChatActivity) baseFragment).checkCanRemoveRestrictionsByBoosts();
     }
 
+    public boolean canSendAudioAsVoice() {
+        return !isPollAttach && !isStoryAudioPicker && !restrictEphemeralMessageTypes
+                && editingMessageObject == null && audioSelectDelegate == null
+                && baseFragment instanceof ChatActivity
+                && ((ChatActivity) baseFragment).canSendZgramVoiceFile();
+    }
+
     private void openAudioLayout(boolean show) {
         if (!musicEnabled) {
             if (show) {

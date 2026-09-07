@@ -1647,6 +1647,7 @@ public class ChatActivity extends BaseFragment implements
     private final static int tag_message = 28;
     private final static int boost_group = 29;
     private final static int zgram_chat_tools = 75;
+    private final static int zgram_block_user = 76;
 
     private final static int bot_help = 30;
     private final static int bot_settings = 31;
@@ -3913,6 +3914,8 @@ public class ChatActivity extends BaseFragment implements
                     }
                 } else if (id == report) {
                     ReportBottomSheet.openChat(ChatActivity.this);
+                } else if (id == zgram_block_user) {
+                    showZgramBlockDialog();
                 } else if (id == star) {
                     for (int a = 0; a < 2; a++) {
                         for (int b = 0; b < selectedMessagesCanStarIds[a].size(); b++) {
@@ -4425,6 +4428,10 @@ public class ChatActivity extends BaseFragment implements
             }
             if (currentEncryptedChat == null && chatMode == MODE_DEFAULT && dialog_id != 0) {
                 headerItem.lazilyAddSubItem(zgram_chat_tools, R.drawable.zgram_wings, LocaleController.getString(R.string.ZgramChatTools));
+            }
+            if (hasZgramUserSafetyActions()) {
+                headerItem.lazilyAddSubItem(zgram_block_user, R.drawable.msg_block, getString(userBlocked ? R.string.Unblock : R.string.BlockContact));
+                headerItem.lazilyAddSubItem(report, R.drawable.msg_report, getString(R.string.ReportChat));
             }
             if (ChatObject.isBoostSupported(currentChat) && (getUserConfig().isPremium() || ChatObject.isBoosted(chatInfo) || ChatObject.hasAdminRights(currentChat))) {
                 RLottieDrawable drawable = new RLottieDrawable(R.raw.boosts, "" + R.raw.boosts, dp(24), dp(24));
@@ -35465,11 +35472,29 @@ public class ChatActivity extends BaseFragment implements
     }
 
     public void sendAudio(ArrayList<MessageObject> audios, CharSequence caption, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long effectId, boolean invertMedia, long payStars) {
+        for (MessageObject audio : audios) {
+            if (MessageObject.isVoiceDocument(audio.getDocument()) && !canSendZgramVoiceFile()) {
+                BulletinFactory.of(this).createErrorBulletin(getString(R.string.ZgramSendAsVoiceUnavailable)).show();
+                return;
+            }
+        }
         if (checkSlowModeAlert()) {
             fillEditingMediaWithCaption(caption, null);
             SendMessagesHelper.prepareSendingAudioDocuments(getAccountInstance(), audios, caption != null ? caption : null, dialog_id, replyingMessageObject, getThreadMessage(), null, notify, scheduleDate, scheduleRepeatPeriod, editingMessageObject, getMessageChatSendParams(), effectId, invertMedia, payStars);
             afterMessageSend();
         }
+    }
+
+    public boolean canSendZgramVoiceFile() {
+        return chatActivityEnterView != null
+                && !chatActivityEnterView.isEditingMessage()
+                && !chatActivityEnterView.isEphemeralMessageVisible()
+                && !isSecretChat()
+                && !isQuickRepliesOrWelcomeMessagesMode()
+                && !isInPollAddOptionMode()
+                && !userBlocked
+                && (userInfo == null || !userInfo.voice_messages_forbidden)
+                && ChatObject.canSendVoice(currentChat);
     }
 
     public void sendContact(TLRPC.User user, boolean notify, int scheduleDate, long effectId, boolean invertMedia, long payStars) {
@@ -43292,6 +43317,34 @@ public class ChatActivity extends BaseFragment implements
             setChildrenEnabled(contentView, true);
             ChatThemeController.getInstance(currentAccount).clearWallpaperThumbImages();
         });
+    }
+
+    private boolean hasZgramUserSafetyActions() {
+        return currentEncryptedChat == null && chatMode == MODE_DEFAULT
+                && currentUser != null && !currentUser.bot
+                && !UserObject.isUserSelf(currentUser)
+                && !UserObject.isDeleted(currentUser)
+                && !UserObject.isReplyUser(currentUser)
+                && currentUser.id != UserObject.VERIFY
+                && !MessagesController.isSupportUser(currentUser);
+    }
+
+    private void showZgramBlockDialog() {
+        if (!hasZgramUserSafetyActions()) return;
+        final long peerId = currentUser.id;
+        final boolean unblock = userBlocked;
+        new AlertDialog.Builder(getContext(), themeDelegate)
+                .setTitle(unblock ? getString(R.string.Unblock) : LocaleController.formatString(R.string.BlockUserTitle, UserObject.getFirstName(currentUser)))
+                .setMessage(unblock ? getString(R.string.AreYouSureUnblockContact) : AndroidUtilities.replaceTags(LocaleController.formatString(R.string.BlockUserAlert, UserObject.getFirstName(currentUser))))
+                .setPositiveButton(getString(unblock ? R.string.Unblock : R.string.BlockContact), (dialog, which) -> {
+                    if (unblock) {
+                        getMessagesController().unblockPeer(peerId);
+                    } else {
+                        getMessagesController().blockPeer(peerId);
+                    }
+                })
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .show();
     }
 
     private void showZgramChatTools() {

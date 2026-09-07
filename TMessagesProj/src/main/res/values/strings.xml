@@ -11225,6 +11225,15 @@
     <string name="UnsupportedUpdate">Update</string>
 
     <string name="ZgramPowerUserTitle">Power User Center</string>
+    <string name="ZgramShowProfileInfo">Show user IDs and data centers</string>
+    <string name="ZgramProfileIdDc">User ID and photo data center</string>
+    <string name="ZgramProfileInfoAbout">Show a separate information row in user profiles. Tap to copy the raw user ID. The DC is the profile photo storage server, not the person’s location; it may be unavailable.</string>
+    <string name="ZgramDcUnavailable">DC unavailable</string>
+    <string name="ZgramUserIdCopied">User ID copied</string>
+    <string name="ZgramSendAsVoice">Send audio as a voice message</string>
+    <string name="ZgramSendAsVoiceAbout">Choose one audio file from this device. It will be sent as a voice message instead of music.</string>
+    <string name="ZgramSendAsVoiceUnavailable">Voice messages are not available in this chat.</string>
+    <string name="ZgramSendAsVoiceInvalid">Choose one readable audio file from this device with a valid duration.</string>
     <string name="ZgramPowerUserAbout">Your Zgram command hub for faster navigation, local message tools, chat controls, and appearance shortcuts.</string>
     <string name="ZgramPowerUserStats">%1$d bookmarks · %2$d archive items · %3$s encrypted</string>
     <string name="ZgramPowerUserTools">Zgram tools</string>

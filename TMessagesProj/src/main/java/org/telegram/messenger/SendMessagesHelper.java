@@ -9791,22 +9791,23 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             int mediaCount = 0;
             for (int a = 0; a < count; a++) {
                 final MessageObject messageObject = messageObjects.get(a);
+                final boolean voice = MessageObject.isVoiceDocument(messageObject.getDocument());
                 String originalPath = messageObject.messageOwner.attachPath;
                 final File f = new File(originalPath);
 
                 boolean isEncrypted = DialogObject.isEncryptedDialog(dialogId);
-                if (!isEncrypted && count > 1 && mediaCount % 10 == 0 && pollSendParams == null) {
+                if (!voice && !isEncrypted && count > 1 && mediaCount % 10 == 0 && pollSendParams == null) {
                     groupId = Utilities.random.nextLong();
                     mediaCount = 0;
                 }
 
                 if (originalPath != null && originalPath.length() > 0) {
-                    originalPath += "audio" + f.length();
+                    originalPath += (voice ? "voice" : "audio") + f.length();
                 }
 
                 TLRPC.TL_document document = null;
                 String parentObject = null;
-                if (!isEncrypted && !TextUtils.isEmpty(originalPath) && !forceDisableCheckSentMedia) {
+                if (!voice && !isEncrypted && !TextUtils.isEmpty(originalPath) && !forceDisableCheckSentMedia) {
                     Object[] sentData = accountInstance.getMessagesStorage().getSentFile(originalPath, !isEncrypted ? MessagesStorage.SENT_FILE_TYPE_AUDIO : MessagesStorage.SENT_FILE_TYPE_AUDIO_ENCRYPTED);
                     if (sentData != null && sentData[0] instanceof TLRPC.TL_document) {
                         document = (TLRPC.TL_document) sentData[0];
@@ -9818,7 +9819,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     document = (TLRPC.TL_document) messageObject.messageOwner.media.document;
                 }
 
-                if (document != null && document.thumbs.isEmpty()) {
+                if (!voice && document != null && document.thumbs.isEmpty()) {
                     Bitmap cover = null;
                     final AudioInfo audioInfo = AudioInfo.getAudioInfo(f);
                     if (audioInfo != null) {

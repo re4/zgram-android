@@ -9,6 +9,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.zgram.ZgramLocalData;
+import org.telegram.messenger.zgram.ZgramSettings;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
@@ -26,6 +27,7 @@ public class ZgramPowerUserActivity extends UniversalFragment {
     private static final int ID_FOLDERS = 6;
     private static final int ID_DATA = 7;
     private static final int ID_UPDATES = 8;
+    private static final int ID_PROFILE_INFO = 9;
 
     @Override
     protected CharSequence getTitle() {
@@ -48,6 +50,8 @@ public class ZgramPowerUserActivity extends UniversalFragment {
         items.add(UItem.asSettingsCell(ID_ARCHIVE, R.drawable.msg_archive, getString(R.string.ZgramLocalArchiveTitle), getString(R.string.ZgramLocalArchiveShortAbout)));
         items.add(UItem.asSettingsCell(ID_CHAT_TOOLS, R.drawable.msg_settings, getString(R.string.ZgramChatTools), getString(R.string.ZgramChatToolsAbout)));
         items.add(UItem.asShadow(getString(R.string.ZgramLocalArchiveEncryptedAbout)));
+        items.add(UItem.asCheck(ID_PROFILE_INFO, getString(R.string.ZgramShowProfileInfo)).setChecked(ZgramSettings.showProfileInfo()));
+        items.add(UItem.asShadow(getString(R.string.ZgramProfileInfoAbout)));
         items.add(UItem.asHeader(getString(R.string.ZgramPowerUserShortcuts)));
         items.add(UItem.asSettingsCell(ID_APPEARANCE, R.drawable.msg_theme, getString(R.string.Theme), getString(R.string.ZgramAppearanceAbout)));
         items.add(UItem.asSettingsCell(ID_FOLDERS, R.drawable.settings_folders, getString(R.string.Filters), getString(R.string.ZgramFoldersAbout)));
@@ -78,6 +82,9 @@ public class ZgramPowerUserActivity extends UniversalFragment {
             presentFragment(new DataSettingsActivity());
         } else if (item.id == ID_UPDATES) {
             Browser.openUrl(getContext(), "https://t.me/zgram_io");
+        } else if (item.id == ID_PROFILE_INFO) {
+            ZgramSettings.setShowProfileInfo(!ZgramSettings.showProfileInfo());
+            listView.adapter.update(true);
         }
     }
 

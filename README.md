@@ -28,8 +28,24 @@ the Zgram identity and celestial obsidian-and-gold design to Android.
 - Local Bookmarks that keep searchable message snapshots after edits or source deletion
 - Encrypted Local Archive with per-chat opt-in retention, edit history, deletion markers, filters, and JSON/HTML export
 - Expanded Zgram Chat Tools for chat appearance, mute controls, media filters, archive controls, bookmarks, and commands
+- Separate, copyable user ID and photo data-center information in profiles, with a Power User visibility toggle
+- Send a local audio file as a voice message from the Audio attachment picker
+- Direct Block/Unblock and Report actions for regular users in the chat menu, with confirmation before blocking
 - Automated GitHub Debug APK builds with downloadable artifacts
 - All standard Telegram Android chat, group, channel, call, media, and privacy features
+
+## Profile information and voice files
+
+User profiles show the raw numeric ID without separators and the photo storage
+DC when Telegram supplies it. Known DCs display Miami, US; Amsterdam, NL; or
+Singapore, SG. This is server information, not the user's physical location.
+Tap the row to copy the ID, or hide it in Power User Center.
+
+To send a file as a voice message, open **Attach > Audio**, enable **Send audio
+as a voice message**, then select one local audio file. Normal audio sending
+is unchanged. Voice privacy restrictions, chat permissions, slow mode, and
+paid-message confirmation remain enforced. This option is not available for
+secret chats, ephemeral messages, media editing, story music, or poll attachments.
 
 ## Private local data
 

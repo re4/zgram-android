@@ -164,6 +164,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.zgram.ZgramSettings;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
@@ -655,6 +656,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int noteRow;
     private int locationRow;
     private int userInfoRow;
+    private int zgramIdDcRow;
     private int channelInfoRow;
     private int usernameRow;
     private int notificationsDividerRow;
@@ -7401,6 +7403,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             }
             return true;
+        } else if (position == zgramIdDcRow) {
+            AndroidUtilities.addToClipboard(Long.toString(userId));
+            BulletinFactory.of(this).createCopyBulletin(getString(R.string.ZgramUserIdCopied), resourcesProvider).show();
+            return true;
         } else if (position == noteRow) {
 
         } else if (position == phoneRow || position == numberRow) {
@@ -10518,6 +10524,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         phoneRow = -1;
         noteRow = -1;
         userInfoRow = -1;
+        zgramIdDcRow = -1;
         locationRow = -1;
         channelInfoRow = -1;
         usernameRow = -1;
@@ -10709,6 +10716,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (userInfo != null && !TextUtils.isEmpty(userInfo.about)) {
                     userInfoRow = rowCount++;
+                }
+                if (user != null && ZgramSettings.showProfileInfo()) {
+                    zgramIdDcRow = rowCount++;
                 }
                 if (user != null && username != null) {
                     usernameRow = rowCount++;
@@ -13499,6 +13509,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         isFragmentPhoneNumber = phoneNumber != null && phoneNumber.matches("888\\d{8}");
                         detailCell.setTextAndValue(text, LocaleController.getString(isFragmentPhoneNumber ? R.string.AnonymousNumber : R.string.PhoneMobile), false);
+                    } else if (position == zgramIdDcRow) {
+                        TLRPC.User user = getMessagesController().getUser(userId);
+                        if (user != null) {
+                            detailCell.setTextAndValue(ZgramSettings.profileInfo(user, userInfo), getString(R.string.ZgramProfileIdDc), false);
+                        }
                     } else if (position == noteRow) {
                         final TLRPC.UserFull userInfo = getMessagesController().getUserFull(userId);
                         if (userInfo == null) return;
@@ -14316,7 +14331,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return VIEW_TYPE_HEADER;
             } else if (position == phoneRow || position == locationRow || position == numberRow || position == birthdayRow) {
                 return VIEW_TYPE_TEXT_DETAIL;
-            } else if (position == usernameRow || position == setUsernameRow) {
+            } else if (position == usernameRow || position == setUsernameRow || position == zgramIdDcRow) {
                 return VIEW_TYPE_TEXT_DETAIL_MULTILINE;
             } else if (position == noteRow) {
                 return VIEW_TYPE_TEXT_DETAIL_MULTILINE_2;
@@ -15717,6 +15732,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, noteRow, sparseIntArray);
             put(++pointer, locationRow, sparseIntArray);
             put(++pointer, userInfoRow, sparseIntArray);
+            put(++pointer, zgramIdDcRow, sparseIntArray);
             put(++pointer, channelInfoRow, sparseIntArray);
             put(++pointer, usernameRow, sparseIntArray);
             put(++pointer, notificationsDividerRow, sparseIntArray);

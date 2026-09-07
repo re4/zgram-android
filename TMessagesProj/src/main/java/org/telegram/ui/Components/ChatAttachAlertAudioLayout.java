@@ -49,6 +49,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.utils.TextWatcherImpl;
+import org.telegram.messenger.zgram.ZgramVoiceFile;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -90,6 +91,8 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     private int maxSelectedFiles = -1;
 
     private boolean sendPressed;
+    private boolean sendAsVoice;
+    private static final int SEND_AS_VOICE = -101;
 
     private boolean loadingAudio;
 
@@ -283,6 +286,10 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asSpace(-100, dp(1)));
+        if (parentAlert.canSendAudioAsVoice() || sendAsVoice) {
+            items.add(UItem.asCheck(SEND_AS_VOICE, getString(R.string.ZgramSendAsVoice)).setChecked(sendAsVoice));
+            items.add(UItem.asShadow(getString(R.string.ZgramSendAsVoiceAbout)));
+        }
         int firstIndex = items.size();
         if (TextUtils.isEmpty(query)) {
             adapter.whiteSectionStart();
@@ -303,7 +310,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             adapter.whiteSectionEnd();
 
             convertProfileMusicToEntries();
-            if (savedMusicList != null && profileEntries != null && !profileEntries.isEmpty()) {
+            if (!sendAsVoice && savedMusicList != null && profileEntries != null && !profileEntries.isEmpty()) {
                 if (items.size() > firstIndex) {
                     items.add(UItem.asShadow(-98, null));
                 }
@@ -328,7 +335,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
                 adapter.whiteSectionEnd();
             }
 
-            if (foundInChats != null && (!foundInChats.isEmpty() || searchChatsRequestId >= 0 || loadingSearchChats)) {
+            if (!sendAsVoice && foundInChats != null && (!foundInChats.isEmpty() || searchChatsRequestId >= 0 || loadingSearchChats)) {
                 if (items.size() > firstIndex) {
                     items.add(UItem.asShadow(-98, null));
                 }
@@ -391,7 +398,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             }
             adapter.whiteSectionEnd();
 
-            if (foundInChats != null && (!foundInChats.isEmpty() || searchChatsRequestId >= 0 || loadingSearchChats)) {
+            if (!sendAsVoice && foundInChats != null && (!foundInChats.isEmpty() || searchChatsRequestId >= 0 || loadingSearchChats)) {
                 if (items.size() > firstIndex) {
                     items.add(UItem.asShadow(-98, null));
                 }
@@ -416,7 +423,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
                 adapter.whiteSectionEnd();
             }
 
-            if (foundGlobal != null && (!foundGlobal.isEmpty() || searchGlobalRequestId >= 0 || loadingSearchGlobal)) {
+            if (!sendAsVoice && foundGlobal != null && (!foundGlobal.isEmpty() || searchGlobalRequestId >= 0 || loadingSearchGlobal)) {
                 if (items.size() > firstIndex) {
                     items.add(UItem.asShadow(-96, null));
                 }
@@ -479,6 +486,17 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     };
 
     private void onItemClick(UItem item, View view, int position, float x, float y) {
+        if (item != null && item.id == SEND_AS_VOICE) {
+            if (!sendAsVoice && !parentAlert.canSendAudioAsVoice()) {
+                showErrorBox(getString(R.string.ZgramSendAsVoiceUnavailable));
+                return;
+            }
+            sendAsVoice = !sendAsVoice;
+            selectedAudios.clear();
+            parentAlert.updateCountButton(0);
+            listView.adapter.update(true);
+            return;
+        }
         if (item != null && item.id == LOAD_MORE_SEARCH_PROFILE) {
             savedMusicList.load();
             return;
@@ -507,8 +525,9 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             audioCell.setChecked(false, true);
             add = false;
         } else {
-            if (maxSelectedFiles >= 0 && selectedAudios.size() >= maxSelectedFiles) {
-                showErrorBox(LocaleController.formatString(R.string.PassportUploadMaxReached, LocaleController.formatPluralString("Files", maxSelectedFiles)));
+            int limit = sendAsVoice ? 1 : maxSelectedFiles;
+            if (limit >= 0 && selectedAudios.size() >= limit) {
+                showErrorBox(LocaleController.formatString(R.string.PassportUploadMaxReached, LocaleController.formatPluralString("Files", limit)));
                 return;
             }
             item.checked = true;
@@ -641,6 +660,8 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     @Override
     public void onHidden() {
         selectedAudios.clear();
+        sendAsVoice = false;
+        sendPressed = false;
     }
 
     @Override
@@ -698,11 +719,22 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         if (selectedAudios.size() == 0 || delegate == null || sendPressed) {
             return false;
         }
-        sendPressed = true;
         ArrayList<MessageObject> audios = new ArrayList<>();
-        for (MediaController.AudioEntry entry : selectedAudios) {
-            audios.add(entry.messageObject);
+        if (sendAsVoice && !parentAlert.canSendAudioAsVoice()) {
+            showErrorBox(getString(R.string.ZgramSendAsVoiceUnavailable));
+            return false;
         }
+        for (MediaController.AudioEntry entry : selectedAudios) {
+            MessageObject audio = sendAsVoice
+                    ? ZgramVoiceFile.prepare(parentAlert.currentAccount, entry.messageObject)
+                    : entry.messageObject;
+            if (audio == null || sendAsVoice && selectedAudios.size() != 1) {
+                showErrorBox(getString(R.string.ZgramSendAsVoiceInvalid));
+                return false;
+            }
+            audios.add(audio);
+        }
+        sendPressed = true;
         return AlertsCreator.ensurePaidMessageConfirmation(parentAlert.currentAccount, parentAlert.getDialogId(), audios.size() + parentAlert.getAdditionalMessagesCount(), payStars -> {
             delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), notify, scheduleDate, scheduleRepeatPeriod, effectId, invertMedia, payStars);
             parentAlert.dismiss(true);
@@ -712,7 +744,12 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     public ArrayList<MessageObject> getSelected() {
         ArrayList<MessageObject> audios = new ArrayList<>();
         for (MediaController.AudioEntry entry : selectedAudios) {
-            audios.add(entry.messageObject);
+            MessageObject audio = sendAsVoice
+                    ? ZgramVoiceFile.prepare(parentAlert.currentAccount, entry.messageObject)
+                    : entry.messageObject;
+            if (audio != null) {
+                audios.add(audio);
+            }
         }
         return audios;
     }
@@ -818,6 +855,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     private boolean searchChatsHasMore;
     private void searchChats() {
         AndroidUtilities.cancelRunOnUIThread(searchChatsRunnable);
+        if (sendAsVoice) return;
 
         if (query != null && query.length() > 0 && query.length() < 3) {
             if (loadingSearchChats) {
@@ -915,6 +953,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     private int globalAudioMessageId = -1000000000;
     private boolean loadingSearchGlobal;
     private void searchGlobal() {
+        if (sendAsVoice) return;
         AndroidUtilities.cancelRunOnUIThread(searchGlobalRunnable);
 
         if (TextUtils.isEmpty(query) || query.length() < 3) {
