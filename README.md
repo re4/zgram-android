@@ -16,6 +16,9 @@ Zgram for Android is an independent community modification of Telegram for
 Android. It keeps the Telegram protocol and mobile experience while bringing
 the Zgram identity and celestial obsidian-and-gold design to Android.
 
+Based on [Telegram 12.10.1 (7038)](https://github.com/DrKLO/Telegram/commit/62b56a07ca7e30e39f7fd00a6728d6bbd716ca1c)
+with the Zgram features below.
+
 ## Android port
 
 - Custom Zyzz angel-wing launcher, adaptive, monochrome, account, and notification icons
@@ -61,14 +64,21 @@ you explicitly create and share a JSON or HTML file.
 
 ## Build a Debug APK
 
-You need Android Studio 2025.1.4, Android SDK 35, Android NDK
-27.2.12479018, and Java 17.
+You need Android Studio 2025.1.4, Android SDK 36, Build Tools 36.0.0,
+Android NDK 27.2.12479018, CMake 3.22.1, and Java 17.
 
 1. Clone with submodules:
 
    ```bash
    git clone --recursive https://github.com/re4/zgram-android.git
    cd zgram-android
+   ```
+
+   When updating an existing checkout, refresh the native dependencies too:
+
+   ```bash
+   git submodule sync --recursive
+   git submodule update --init --recursive
    ```
 
 2. Configure your Telegram API credentials in
