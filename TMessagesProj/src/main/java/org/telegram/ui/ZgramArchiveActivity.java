@@ -17,6 +17,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.zgram.ZgramLocalData;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.Cells.ZgramDetailCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
@@ -89,7 +90,7 @@ public class ZgramArchiveActivity extends ZgramSearchableActivity {
                     R.string.ZgramLocalArchiveSummary,
                     summary.count,
                     AndroidUtilities.formatFileSize(summary.approximateBytes));
-            final UItem item = UItem.asSettingsCell(ID_DIALOG, R.drawable.msg_archive, name, value);
+            final UItem item = ZgramDetailCell.Factory.of(ID_DIALOG, R.drawable.msg_archive, name, value);
             item.object = summary;
             items.add(item);
         }
@@ -116,7 +117,7 @@ public class ZgramArchiveActivity extends ZgramSearchableActivity {
                     : R.string.ZgramCommandPaletteEmpty)));
         } else {
             for (ZgramLocalData.Snapshot snapshot : snapshots) {
-                final UItem item = UItem.asSettingsCell(
+                final UItem item = ZgramDetailCell.Factory.of(
                         ID_MESSAGE,
                         snapshot.deletedAt != 0 ? R.drawable.msg_delete : R.drawable.msg_message,
                         title(snapshot),

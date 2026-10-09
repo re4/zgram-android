@@ -9,6 +9,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.zgram.ZgramLocalData;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.Cells.ZgramDetailCell;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 
@@ -42,7 +43,7 @@ public class ZgramBookmarksActivity extends ZgramSearchableActivity {
                     : R.string.ZgramCommandPaletteEmpty)));
         } else {
             for (ZgramLocalData.Snapshot snapshot : snapshots) {
-                final UItem item = UItem.asSettingsCell(
+                final UItem item = ZgramDetailCell.Factory.of(
                         ID_MESSAGE,
                         snapshot.deletedAt != 0 ? R.drawable.msg_delete : R.drawable.msg_fave,
                         title(snapshot),

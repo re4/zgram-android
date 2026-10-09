@@ -10,6 +10,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.Cells.ZgramDetailCell;
 import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
@@ -106,7 +107,7 @@ public class ZgramCommandPaletteActivity extends ZgramSearchableActivity {
         }
         items.add(UItem.asHeader(title));
         for (Command command : visible) {
-            final UItem item = UItem.asSettingsCell(command.id, command.icon, command.title, command.about);
+            final UItem item = ZgramDetailCell.Factory.of(command.id, command.icon, command.title, command.about);
             item.object = command;
             items.add(item);
         }
