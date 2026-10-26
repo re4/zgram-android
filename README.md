@@ -16,8 +16,10 @@ Zgram for Android is an independent community modification of Telegram for
 Android. It keeps the Telegram protocol and mobile experience while bringing
 the Zgram identity and celestial obsidian-and-gold design to Android.
 
-Based on [Telegram 12.10.6 (7112)](https://github.com/DrKLO/Telegram/commit/f2908b14133bbffbf7ab04f641ecb5bfaf533242)
+Based on [Telegram 13.1.1 (7237)](https://github.com/DrKLO/Telegram/commit/3de37c8cfb039452be7398909461da6288babf15)
 with the Zgram features below.
+
+Requires Android 6.0 or newer, matching the upstream minimum version.
 
 ## Android port
 
