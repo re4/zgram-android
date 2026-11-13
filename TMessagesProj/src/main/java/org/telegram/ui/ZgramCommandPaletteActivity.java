@@ -61,7 +61,7 @@ public class ZgramCommandPaletteActivity extends ZgramSearchableActivity {
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asTopViewStatic(getString(R.string.ZgramCommandPaletteAbout), R.drawable.zgram_wings));
+        items.add(UItem.asShadow(getString(R.string.ZgramCommandPaletteAbout)));
         addGroup(items, getString(R.string.ZgramCommandPaletteNavigation), new Command[] {
                 command(SAVED_MESSAGES, R.drawable.msg_saved, R.string.SavedMessages, R.string.ZgramCommandSavedMessages),
                 command(CONTACTS, R.drawable.msg_contacts, R.string.Contacts, R.string.ZgramCommandContacts),
@@ -111,6 +111,7 @@ public class ZgramCommandPaletteActivity extends ZgramSearchableActivity {
             item.object = command;
             items.add(item);
         }
+        items.add(UItem.asShadow(null));
     }
 
     @Override

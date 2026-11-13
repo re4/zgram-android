@@ -15,10 +15,13 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
+
+import java.util.HashSet;
 
 public class ZgramDetailCell extends LinearLayout implements Theme.Colorable {
     private final Theme.ResourcesProvider resourcesProvider;
@@ -31,6 +34,7 @@ public class ZgramDetailCell extends LinearLayout implements Theme.Colorable {
         super(context);
         this.resourcesProvider = resourcesProvider;
         setOrientation(HORIZONTAL);
+        setLayoutDirection(LocaleController.isRTL ? LAYOUT_DIRECTION_RTL : LAYOUT_DIRECTION_LTR);
         setGravity(Gravity.CENTER_VERTICAL);
         setMinimumHeight(AndroidUtilities.dp(64));
         setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
@@ -50,15 +54,23 @@ public class ZgramDetailCell extends LinearLayout implements Theme.Colorable {
 
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        titleView.setMaxLines(2);
+        titleView.setEllipsize(TextUtils.TruncateAt.END);
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         titleView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textLayout.addView(titleView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         detailView = new TextView(context);
         detailView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        detailView.setMaxLines(3);
+        detailView.setEllipsize(TextUtils.TruncateAt.END);
+        ThemeBind.textColor(detailView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         detailView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         LayoutParams detailParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
         detailParams.topMargin = AndroidUtilities.dp(4);
         textLayout.addView(detailView, detailParams);
+
+        ThemeBind.colorFilter(iconView, Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
 
         updateColors();
     }
@@ -82,6 +94,15 @@ public class ZgramDetailCell extends LinearLayout implements Theme.Colorable {
         detailView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         iconView.setColorFilter(new PorterDuffColorFilter(
                 Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        invalidate();
+    }
+
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_windowBackgroundWhiteBlackText);
+        colors.add(Theme.key_windowBackgroundWhiteGrayText2);
+        colors.add(Theme.key_windowBackgroundWhiteGrayIcon);
+        colors.add(Theme.key_divider);
     }
 
     @Override
@@ -106,6 +127,7 @@ public class ZgramDetailCell extends LinearLayout implements Theme.Colorable {
         public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter,
                              UniversalRecyclerView listView) {
             ((ZgramDetailCell) view).set(item.text, item.subtext, item.iconResId, divider);
+            ((ZgramDetailCell) view).updateColors();
         }
 
         public static UItem of(int id, int icon, CharSequence title, CharSequence detail) {

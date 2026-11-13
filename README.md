@@ -16,7 +16,7 @@ Zgram for Android is an independent community modification of Telegram for
 Android. It keeps the Telegram protocol and mobile experience while bringing
 the Zgram identity and celestial obsidian-and-gold design to Android.
 
-Based on [Telegram 13.1.1 (7237)](https://github.com/DrKLO/Telegram/commit/3de37c8cfb039452be7398909461da6288babf15)
+Based on [Telegram 13.2.2 (7303)](https://github.com/DrKLO/Telegram/commit/21f7d109da6ab3506c9e9577f98c6a38771ab335)
 with the Zgram features below.
 
 Requires Android 6.0 or newer, matching the upstream minimum version.
@@ -28,7 +28,7 @@ Requires Android 6.0 or newer, matching the upstream minimum version.
 - Built-in Zgram dark theme with gold accents and the celestial wing wallpaper
 - Zgram is the first-run theme while existing saved theme choices are preserved
 - Official updates shortcut in Settings linking to [@zgram_io](https://t.me/zgram_io)
-- Power User Center with live bookmark, archive, and encrypted-storage totals
+- Power User Center with Telegram-style settings sections, search, and live bookmark, archive, and encrypted-storage totals
 - Searchable command palette for navigation, interface settings, local data, and current-chat actions
 - Local Bookmarks that keep searchable message snapshots after edits or source deletion
 - Encrypted Local Archive with per-chat opt-in retention, edit history, deletion markers, filters, and JSON/HTML export
@@ -63,6 +63,13 @@ Only eligible messages observed by this device while archiving is enabled are
 captured. Secret chats, self-destructing and view-once media, protected or paid
 content, and service messages are excluded. Exports are decrypted only when
 you explicitly create and share a JSON or HTML file.
+
+Tap an archived message or bookmark to read its saved text and earlier edits
+on this device, even after the original chat is purged. Clearing a Telegram
+chat does not clear local snapshots; the selected archive retention and
+explicit local-clear actions still apply. Snapshots store text and media
+descriptions, not copies of media files. **Open Original Message** is a
+separate action when the original is still available.
 
 ## Build a Debug APK
 

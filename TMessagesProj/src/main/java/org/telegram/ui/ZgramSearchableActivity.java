@@ -9,18 +9,15 @@ import android.widget.EditText;
 
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.UniversalFragment;
 
-abstract class ZgramSearchableActivity extends UniversalFragment {
+abstract class ZgramSearchableActivity extends ZgramSettingsActivity {
 
     private String query = "";
 
     @Override
     public View createView(Context context) {
         final View result = super.createView(context);
-        final ActionBarMenuItem search = actionBar.createMenu()
+        final ActionBarMenuItem search = simpleActionBar.getMenu()
                 .addItem(1, R.drawable.outline_header_search, getResourceProvider())
                 .setIsSearchField(true)
                 .setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
@@ -40,10 +37,6 @@ abstract class ZgramSearchableActivity extends UniversalFragment {
                 });
         search.setSearchFieldHint(searchHint());
         search.setContentDescription(searchHint());
-        final EditTextBoldCursor field = search.getSearchField();
-        field.setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
-        field.setHintTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
-        field.setCursorColor(getThemedColor(Theme.key_actionBarDefaultTitle));
         return result;
     }
 

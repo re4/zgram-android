@@ -13,6 +13,7 @@ import android.util.Base64;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
@@ -32,13 +33,13 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
-import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -216,6 +217,67 @@ public final class ZgramLocalData {
         }
     }
 
+    /** Server deletion IDs are global for ordinary chats, but local to each channel. */
+    public synchronized void markServerDeleted(long channelId, List<Integer> messageIds) {
+        ensureLoadedLocked();
+        if (messageIds == null || messageIds.isEmpty()) {
+            return;
+        }
+        final HashSet<Integer> ids = new HashSet<>(messageIds);
+        final long deletedAt = System.currentTimeMillis() / 1000L;
+        boolean changed = false;
+        for (Snapshot snapshot : allSnapshotsLocked()) {
+            long savedChannelId = snapshot.channelId;
+            if (savedChannelId == -1) {
+                // Older archives did not record the ID namespace. Never guess for an unknown chat.
+                final TLRPC.Chat chat = snapshot.dialogId < 0
+                        ? MessagesController.getInstance(account).getChat(-snapshot.dialogId) : null;
+                if (snapshot.dialogId < 0 && chat == null && channelId == 0) {
+                    continue;
+                }
+                savedChannelId = channelId > 0 && snapshot.dialogId == -channelId
+                        || ChatObject.isChannel(chat) ? -snapshot.dialogId : 0;
+            }
+            if (savedChannelId == channelId && ids.contains(snapshot.messageId)) {
+                changed |= markDeletedLocked(snapshot, deletedAt);
+            }
+        }
+        if (changed) {
+            scheduleSaveLocked();
+        }
+    }
+
+    /** A history purge changes the status of saved copies, never their content or retention. */
+    public synchronized void markHistoryDeleted(long dialogId, int maxMessageId) {
+        ensureLoadedLocked();
+        final long deletedAt = System.currentTimeMillis() / 1000L;
+        boolean changed = false;
+        for (Snapshot snapshot : allSnapshotsLocked()) {
+            if (snapshot.dialogId == dialogId && snapshot.messageId <= maxMessageId) {
+                changed |= markDeletedLocked(snapshot, deletedAt);
+            }
+        }
+        if (changed) {
+            scheduleSaveLocked();
+        }
+    }
+
+    private List<Snapshot> allSnapshotsLocked() {
+        final ArrayList<Snapshot> snapshots = new ArrayList<>(bookmarks.values());
+        snapshots.addAll(archive.values());
+        return snapshots;
+    }
+
+    public synchronized String dialogName(long dialogId) {
+        ensureLoadedLocked();
+        for (Snapshot snapshot : allSnapshotsLocked()) {
+            if (snapshot.dialogId == dialogId && !TextUtils.isEmpty(snapshot.peerName)) {
+                return snapshot.peerName;
+            }
+        }
+        return DialogObject.getName(account, dialogId);
+    }
+
     public synchronized List<ArchiveSummary> archiveDialogs(String query) {
         ensureLoadedLocked();
         pruneLocked();
@@ -305,7 +367,7 @@ public final class ZgramLocalData {
             root.put("format", "zgram-local-archive");
             root.put("version", FORMAT_VERSION);
             root.put("dialog_id", dialogId);
-            root.put("chat", DialogObject.getName(account, dialogId));
+            root.put("chat", dialogName(dialogId));
             root.put("retention_days", getRetention(dialogId));
             final JSONArray messages = new JSONArray();
             for (Snapshot snapshot : archive(dialogId, null)) {
@@ -321,7 +383,7 @@ public final class ZgramLocalData {
 
     public synchronized String exportHtml(long dialogId) {
         ensureLoadedLocked();
-        final String chat = DialogObject.getName(account, dialogId);
+        final String chat = dialogName(dialogId);
         final StringBuilder result = new StringBuilder();
         result.append("<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
         result.append("<title>").append(html(chat)).append(" — Zgram Local Archive</title>");
@@ -385,6 +447,7 @@ public final class ZgramLocalData {
     private Snapshot snapshot(MessageObject message) {
         final Snapshot result = new Snapshot();
         result.dialogId = message.getDialogId();
+        result.channelId = message.messageOwner.peer_id != null ? message.messageOwner.peer_id.channel_id : 0;
         result.messageId = message.getId();
         result.date = message.messageOwner.date;
         result.editDate = message.messageOwner.edit_date;
@@ -471,27 +534,29 @@ public final class ZgramLocalData {
         loaded = true;
         final File file = storageFile();
         final File backup = backupFile();
-        final File source = file.exists() ? file : backup;
-        if (!source.exists()) {
-            return;
-        }
-        try {
-            if (source.length() > MAX_FILE_SIZE) {
-                throw new IllegalStateException("Zgram local data file is too large");
+        for (File source : new File[] {file, backup}) {
+            if (!source.exists()) {
+                continue;
             }
-            final byte[] plaintext = decrypt(read(source));
-            readJsonLocked(new JSONObject(new String(plaintext, StandardCharsets.UTF_8)));
-            pruneLocked();
-            if (dirty) {
-                scheduleSaveLocked();
+            try {
+                if (source.length() > MAX_FILE_SIZE) {
+                    throw new IllegalStateException("Zgram local data file is too large");
+                }
+                final byte[] plaintext = decrypt(read(source));
+                readJsonLocked(new JSONObject(new String(plaintext, StandardCharsets.UTF_8)));
+                pruneLocked();
+                if (dirty || source.equals(backup)) {
+                    scheduleSaveLocked();
+                }
+                return;
+            } catch (Exception e) {
+                FileLog.e(e);
+                final File unreadable = new File(source.getParentFile(), source.getName() + ".unreadable-" + System.currentTimeMillis());
+                source.renameTo(unreadable);
+                bookmarks.clear();
+                archive.clear();
+                retention.clear();
             }
-        } catch (Exception e) {
-            FileLog.e(e);
-            final File unreadable = new File(source.getParentFile(), source.getName() + ".unreadable-" + System.currentTimeMillis());
-            source.renameTo(unreadable);
-            bookmarks.clear();
-            archive.clear();
-            retention.clear();
         }
     }
 
@@ -583,10 +648,10 @@ public final class ZgramLocalData {
     }
 
     private byte[] encrypt(byte[] plaintext) throws Exception {
-        final byte[] iv = new byte[12];
-        new SecureRandom().nextBytes(iv);
         final Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        cipher.init(Cipher.ENCRYPT_MODE, encryptionKey(), new GCMParameterSpec(128, iv));
+        // Android Keystore requires a provider-generated IV for randomized GCM encryption.
+        cipher.init(Cipher.ENCRYPT_MODE, encryptionKey());
+        final byte[] iv = cipher.getIV();
         cipher.updateAAD(aad());
         final byte[] encrypted = cipher.doFinal(plaintext);
         final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -790,6 +855,7 @@ public final class ZgramLocalData {
 
     public static final class Snapshot {
         public long dialogId;
+        public long channelId = -1;
         public int messageId;
         public int date;
         public int editDate;
@@ -847,9 +913,10 @@ public final class ZgramLocalData {
                 edited = true;
                 changed = true;
             }
-            if (editDate != source.editDate || replyTo != source.replyTo || outgoing != source.outgoing
+            if (channelId != source.channelId || editDate != source.editDate || replyTo != source.replyTo || outgoing != source.outgoing
                     || senderId != source.senderId || !TextUtils.equals(peerName, source.peerName)
                     || !TextUtils.equals(senderName, source.senderName)) {
+                channelId = source.channelId;
                 editDate = source.editDate;
                 replyTo = source.replyTo;
                 outgoing = source.outgoing;
@@ -872,6 +939,7 @@ public final class ZgramLocalData {
         private Snapshot copy() {
             final Snapshot result = new Snapshot();
             result.dialogId = dialogId;
+            result.channelId = channelId;
             result.messageId = messageId;
             result.date = date;
             result.editDate = editDate;
@@ -902,6 +970,7 @@ public final class ZgramLocalData {
         private JSONObject toJson() throws Exception {
             final JSONObject result = new JSONObject();
             result.put("dialog_id", dialogId);
+            result.put("channel_id", channelId);
             result.put("message_id", messageId);
             result.put("date", date);
             result.put("edit_date", editDate);
@@ -926,6 +995,7 @@ public final class ZgramLocalData {
         private static Snapshot fromJson(JSONObject object) throws Exception {
             final Snapshot result = new Snapshot();
             result.dialogId = object.getLong("dialog_id");
+            result.channelId = object.optLong("channel_id", -1);
             result.messageId = object.getInt("message_id");
             result.date = object.optInt("date", 0);
             result.editDate = object.optInt("edit_date", 0);

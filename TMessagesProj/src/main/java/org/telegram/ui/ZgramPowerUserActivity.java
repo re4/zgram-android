@@ -11,14 +11,13 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.zgram.ZgramLocalData;
 import org.telegram.messenger.zgram.ZgramSettings;
 import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.Cells.ZgramDetailCell;
+import org.telegram.ui.Components.IconBackgroundColors;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
-import org.telegram.ui.Components.UniversalFragment;
 
 import java.util.ArrayList;
 
-public class ZgramPowerUserActivity extends UniversalFragment {
+public class ZgramPowerUserActivity extends ZgramSettingsActivity {
 
     private static final int ID_PALETTE = 1;
     private static final int ID_BOOKMARKS = 2;
@@ -43,22 +42,24 @@ public class ZgramPowerUserActivity extends UniversalFragment {
                 data.bookmarkCount(),
                 data.archiveCount(),
                 AndroidUtilities.formatFileSize(data.storageSize()));
-        items.add(UItem.asTopViewStatic(getString(R.string.ZgramPowerUserAbout), R.drawable.zgram_wings));
-        items.add(UItem.asShadow(stats));
         items.add(UItem.asHeader(getString(R.string.ZgramPowerUserTools)));
-        items.add(ZgramDetailCell.Factory.of(ID_PALETTE, R.drawable.msg_search, getString(R.string.ZgramCommandPaletteTitle), getString(R.string.ZgramCommandPaletteAbout)));
-        items.add(ZgramDetailCell.Factory.of(ID_BOOKMARKS, R.drawable.msg_fave, getString(R.string.ZgramLocalBookmarksTitle), getString(R.string.ZgramLocalBookmarksShortAbout)));
-        items.add(ZgramDetailCell.Factory.of(ID_ARCHIVE, R.drawable.msg_archive, getString(R.string.ZgramLocalArchiveTitle), getString(R.string.ZgramLocalArchiveShortAbout)));
-        items.add(ZgramDetailCell.Factory.of(ID_CHAT_TOOLS, R.drawable.msg_settings, getString(R.string.ZgramChatTools), getString(R.string.ZgramChatToolsAbout)));
-        items.add(UItem.asShadow(getString(R.string.ZgramLocalArchiveEncryptedAbout)));
+        items.add(setting(ID_PALETTE, IconBackgroundColors.BLUE, R.drawable.msg_search, getString(R.string.ZgramCommandPaletteTitle), null));
+        items.add(setting(ID_BOOKMARKS, IconBackgroundColors.ORANGE, R.drawable.msg_fave, getString(R.string.ZgramLocalBookmarksTitle), Integer.toString(data.bookmarkCount())));
+        items.add(setting(ID_ARCHIVE, IconBackgroundColors.GREEN, R.drawable.msg_archive, getString(R.string.ZgramLocalArchiveTitle), Integer.toString(data.archiveCount())));
+        items.add(setting(ID_CHAT_TOOLS, IconBackgroundColors.PURPLE, R.drawable.msg_settings, getString(R.string.ZgramChatTools), null));
+        items.add(UItem.asShadow(stats + "\n\n" + getString(R.string.ZgramLocalArchiveEncryptedAbout)));
         items.add(UItem.asCheck(ID_PROFILE_INFO, getString(R.string.ZgramShowProfileInfo)).setChecked(ZgramSettings.showProfileInfo()));
         items.add(UItem.asShadow(getString(R.string.ZgramProfileInfoAbout)));
         items.add(UItem.asHeader(getString(R.string.ZgramPowerUserShortcuts)));
-        items.add(ZgramDetailCell.Factory.of(ID_APPEARANCE, R.drawable.msg_theme, getString(R.string.Theme), getString(R.string.ZgramAppearanceAbout)));
-        items.add(ZgramDetailCell.Factory.of(ID_FOLDERS, R.drawable.settings_folders, getString(R.string.Filters), getString(R.string.ZgramFoldersAbout)));
-        items.add(ZgramDetailCell.Factory.of(ID_DATA, R.drawable.settings_data, getString(R.string.DataSettings), getString(R.string.ZgramDataAbout)));
-        items.add(ZgramDetailCell.Factory.of(ID_UPDATES, R.drawable.msg_channel, getString(R.string.ZgramOfficialUpdates), "@zgram_io"));
+        items.add(setting(ID_APPEARANCE, IconBackgroundColors.PURPLE, R.drawable.msg_theme, getString(R.string.Theme), null));
+        items.add(setting(ID_FOLDERS, IconBackgroundColors.BLUE_ALT, R.drawable.settings_folders, getString(R.string.Filters), null));
+        items.add(setting(ID_DATA, IconBackgroundColors.BLUE_DEEP, R.drawable.settings_data, getString(R.string.DataSettings), null));
+        items.add(setting(ID_UPDATES, IconBackgroundColors.CYAN, R.drawable.msg_channel, getString(R.string.ZgramOfficialUpdates), "@zgram_io"));
         items.add(UItem.asShadow(getString(R.string.ZgramPowerUserFooter)));
+    }
+
+    private static UItem setting(int id, IconBackgroundColors color, int icon, CharSequence title, CharSequence value) {
+        return SettingsActivity.SettingCell.Factory.of(id, color.top, color.bottom, icon, title, null, value);
     }
 
     @Override

@@ -11,7 +11,6 @@ import androidx.core.content.FileProvider;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -53,7 +52,7 @@ public class ZgramArchiveActivity extends ZgramSearchableActivity {
         if (dialogId == 0) {
             return getString(R.string.ZgramLocalArchiveTitle);
         }
-        final String name = DialogObject.getName(currentAccount, dialogId);
+        final String name = ZgramLocalData.get(currentAccount).dialogName(dialogId);
         return TextUtils.isEmpty(name) ? getString(R.string.ZgramLocalArchiveTitle) : name;
     }
 
@@ -74,7 +73,7 @@ public class ZgramArchiveActivity extends ZgramSearchableActivity {
     private void fillDialogs(ArrayList<UItem> items) {
         final ZgramLocalData data = ZgramLocalData.get(currentAccount);
         final List<ZgramLocalData.ArchiveSummary> summaries = data.archiveDialogs(query());
-        items.add(UItem.asTopViewStatic(getString(R.string.ZgramLocalArchiveAbout), R.drawable.zgram_wings));
+        items.add(UItem.asShadow(getString(R.string.ZgramLocalArchiveAbout)));
         items.add(UItem.asHeader(LocaleController.formatString(R.string.ZgramLocalArchiveChatCount, summaries.size())));
         if (summaries.isEmpty()) {
             items.add(UItem.asShadow(getString(TextUtils.isEmpty(query())
@@ -100,7 +99,7 @@ public class ZgramArchiveActivity extends ZgramSearchableActivity {
     private void fillTimeline(ArrayList<UItem> items) {
         final ZgramLocalData data = ZgramLocalData.get(currentAccount);
         final List<ZgramLocalData.Snapshot> snapshots = data.archive(dialogId, query());
-        items.add(UItem.asTopViewStatic(getString(R.string.ZgramLocalArchiveChatAbout), R.drawable.zgram_wings));
+        items.add(UItem.asShadow(getString(R.string.ZgramLocalArchiveChatAbout)));
         items.add(UItem.asHeader(getString(R.string.ZgramLocalArchiveControls)));
         items.add(UItem.asSettingsCell(
                 ID_RETENTION,
@@ -144,7 +143,7 @@ public class ZgramArchiveActivity extends ZgramSearchableActivity {
             confirmClear();
         } else if (item.id == ID_MESSAGE && item.object instanceof ZgramLocalData.Snapshot) {
             final ZgramLocalData.Snapshot snapshot = (ZgramLocalData.Snapshot) item.object;
-            presentFragment(ChatActivity.of(snapshot.dialogId, snapshot.messageId));
+            presentFragment(new ZgramSnapshotActivity(snapshot));
         }
     }
 

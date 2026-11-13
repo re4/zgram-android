@@ -35,7 +35,7 @@ public class ZgramBookmarksActivity extends ZgramSearchableActivity {
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         final ZgramLocalData data = ZgramLocalData.get(currentAccount);
         final List<ZgramLocalData.Snapshot> snapshots = data.bookmarks(query());
-        items.add(UItem.asTopViewStatic(getString(R.string.ZgramLocalBookmarksAbout), R.drawable.zgram_wings));
+        items.add(UItem.asShadow(getString(R.string.ZgramLocalBookmarksAbout)));
         items.add(UItem.asHeader(LocaleController.formatString(R.string.ZgramLocalBookmarksCount, snapshots.size())));
         if (snapshots.isEmpty()) {
             items.add(UItem.asShadow(getString(TextUtils.isEmpty(query())
@@ -60,7 +60,7 @@ public class ZgramBookmarksActivity extends ZgramSearchableActivity {
     protected void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == ID_MESSAGE && item.object instanceof ZgramLocalData.Snapshot) {
             final ZgramLocalData.Snapshot snapshot = (ZgramLocalData.Snapshot) item.object;
-            presentFragment(ChatActivity.of(snapshot.dialogId, snapshot.messageId));
+            presentFragment(new ZgramSnapshotActivity(snapshot));
         } else if (item.id == ID_CLEAR) {
             confirmClear();
         }
